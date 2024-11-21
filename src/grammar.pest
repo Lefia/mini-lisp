@@ -1,0 +1,50 @@
+/* Lexical */ 
+
+// Preliminary
+WHITESPACE = _{ "\t" | "\n" | "\r" | " " } // separator
+letter = { 'a'..'z' }
+digit = { '0'..'9' }
+
+// Token
+number = @{ "0" | ('1'..'9' ~ digit*) | ("-" ~ '1'..'9' ~ digit*) }
+id = @{ letter ~ (letter | digit | "-")* }
+bool = { "#t" | "#f" }
+
+/* Grammar */
+PROGRAM = { STMT+ }
+STMT       = { DEF_STMT | PRINT_STMT | EXP  }
+PRINT_STMT = { "(" ~ "print-num" ~ EXP ~ ")" | "(" ~ "print-bool" ~ EXP ~ ")" }
+EXP        = { bool | number | VARIABLE | NUM_OP | LOGICAL_OP | IF_EXP | FUN_EXP | FUN_CALL }
+
+NUM_OP = { PLUS | MINUS | MULTIPLY | DIVIDE | MODULUS | GREATER | SMALLER | EQUAL }
+    PLUS       = { "(" ~ "+"   ~ EXP ~ EXP+ ~ ")" }
+    MINUS      = { "(" ~ "-"   ~ EXP ~ EXP  ~ ")" }
+    MULTIPLY   = { "(" ~ "*"   ~ EXP ~ EXP+ ~ ")" }
+    DIVIDE     = { "(" ~ "/"   ~ EXP ~ EXP  ~ ")" }
+    MODULUS    = { "(" ~ "mod" ~ EXP ~ EXP  ~ ")" }
+    GREATER    = { "(" ~ ">"   ~ EXP ~ EXP  ~ ")" }
+    SMALLER    = { "(" ~ "<"   ~ EXP ~ EXP  ~ ")" }
+    EQUAL      = { "(" ~ "="   ~ EXP ~ EXP+ ~ ")" }
+
+LOGICAL_OP = { AND_OP | OR_OP | NOT_OP }
+    AND_OP = { "(" ~ "and" ~ EXP ~ EXP+ ~ ")" }
+    OR_OP  = { "(" ~ "or"  ~ EXP ~ EXP+ ~ ")" }
+    NOT_OP = { "(" ~ "not" ~ EXP        ~ ")" }
+
+DEF_STMT = { "(" ~ "define" ~ VARIABLE ~ EXP ~ ")" }
+    VARIABLE = _{ id }
+
+FUN_EXP = { "(" ~ "fun" ~ FUN_IDS ~ FUN_BODY ~ ")" }
+    FUN_IDS  = { "(" ~ id* ~ ")" }
+    FUN_BODY = _{ EXP }
+    FUN_CALL = { 
+        "(" ~ FUN_EXP ~ PARAM* ~ ")"
+        | "(" ~ FUN_NAME ~ PARAM* ~ ")" 
+    }
+    PARAM    = _{ EXP }
+    FUN_NAME = _{ id  }
+
+IF_EXP = { "(" ~ "if" ~ TEST_EXP ~ THEN_EXP ~ ELSE_EXP ~ ")" }
+    TEST_EXP = _{ EXP }
+    THEN_EXP = _{ EXP }
+    ELSE_EXP = _{ EXP }
