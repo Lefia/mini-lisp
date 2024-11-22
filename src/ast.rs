@@ -8,8 +8,8 @@ pub struct Program {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     ExpStmt   { exp: Exp },
-    PrintStmt { exp: Exp, print_type: PrintType },
-    DefStmt   { exp: Exp, id: Exp },
+    PrintStmt { print_type: PrintType, exp: Exp },
+    DefStmt   { id: Exp, exp: Exp },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -20,12 +20,12 @@ pub enum PrintType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Exp {
-    Bool       { val: bool   },
-    Num        { val: i64    },
-    Id         { val: String },
+    Bool(bool),
+    Num(i64),
+    Id(String),
     NumExp     { op: NumOp, args: Vec<Box<Exp>>      },
     LogicalExp { op: LogicalOp, args: Vec<Box<Exp>>  },
-    FunExp     { params: Vec<Exp>, body: Box<Exp>    },
+    FunExp     { params: Vec<Exp>, def_stmts: Vec<Stmt>, body: Box<Exp> },
     FunCall    { func: Box<Exp>, args: Vec<Box<Exp>> },
     IfExp      { cond_exp: Box<Exp>, then_exp: Box<Exp>, else_exp: Box<Exp> },
 }
@@ -33,14 +33,10 @@ pub enum Exp {
 impl Exp {
     pub fn to_string(&self) -> String {
         match self {
-            Exp::Bool { val } => val.to_string(),
-            Exp::Num { val } => val.to_string(),
-            Exp::Id { val } => val.to_string(),
-            Exp::NumExp { op, args } => format!("{:?} {:?}", op, args),
-            Exp::LogicalExp { op, args } => format!("{:?} {:?}", op, args),
-            Exp::FunExp { params, body } => format!("{:?} {:?}", params, body),
-            Exp::FunCall { func, args } => format!("{:?} {:?}", func, args),
-            Exp::IfExp { cond_exp, then_exp, else_exp } => format!("{:?} {:?} {:?}", cond_exp, then_exp, else_exp),
+            Exp::Bool(val) => val.to_string(),
+            Exp::Num(val) => val.to_string(),
+            Exp::Id(val) => val.to_string(),
+            _ => unimplemented!()
         }
     }
 }

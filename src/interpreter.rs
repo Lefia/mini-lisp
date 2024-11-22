@@ -1,125 +1,47 @@
-use std::fmt::{self, Display, Formatter};
-use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use crate::ast::*;
-
-#[derive(Clone)]
-struct Env {
-    vars: HashMap<String, Value>,
-    outer: Option<Box<Env>>,
-}
-
-impl Env {
-    fn new() -> Self {
-        Env {
-            vars: HashMap::new(),
-            outer: None,
-        }
-    }
-
-    fn extend(&self) -> Env {
-        Env {
-            vars: HashMap::new(),
-            outer: Some(Box::new(self.clone())),
-        }
-    }
-
-    fn get_var(&self, id: &str) -> Option<Value> {
-        match self.vars.get(id) {
-            Some(val) => Some(val.clone()),
-            None => match &self.outer { // Attention here
-                Some(outer) => outer.get_var(id),
-                None => None,
-            },
-        }
-    }
-
-    fn set_var(&mut self, id: String, val: Value) {
-        self.vars.insert(id, val);
-    }
-
-}
-
-#[derive(Debug, Clone)]
-enum Value {
-    Num(i64),
-    Bool(bool),
-    FunExp(Box<Exp>),
-}
-
-impl Display for Value {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Value::Num(val) => write!(f, "{}", val),
-            Value::Bool(val) => write!(f, "{}", val),
-            Value::FunExp(exp) => write!(f, "{:?}", exp),
-        }
-    }
-}
-
-impl Value {
-    fn to_bool(&self) -> bool {
-        match self {
-            Value::Num(val) => *val != 0,
-            Value::Bool(val) => *val,
-            _ => false,
-        }
-    }
-
-    fn to_num(&self) -> i64 {
-        match self {
-            Value::Num(val) => *val,
-            Value::Bool(val) => *val as i64,
-            _ => 0,
-        }
-    }
-
-    fn to_fun(&self) -> Box<Exp> {
-        match self {
-            Value::FunExp(exp) => exp.clone(),
-            _ => panic!("Expected function"),
-        }
-    }
-}
+use crate::env::*;
 
 pub fn run(program: Program) {
-    let mut env = Env::new();
+    let env = Rc::new(RefCell::new(Env::new()));
     for stmt in program.stmts {
-        match stmt {
-            Stmt::ExpStmt { exp } => {
-                let _ = eval_exp(exp, &mut env);
-            }
-            Stmt::DefStmt { id, exp } => {
-                let var_name = match id {
-                    Exp::Id { val } => val,
-                    _ => panic!("Expected identifier")
-                };
-                env.set_var(var_name, Value::FunExp(Box::new(exp)));
-            }
-            Stmt::PrintStmt { exp, print_type } => {
-                let val = eval_exp(exp, &mut env).unwrap();
-                match print_type {
-                    PrintType::PrintNum => println!("{}", val.to_num()),
-                    PrintType::PrintBool => println!("{}", if val.to_bool() { "#t" } else { "#f" }),
-                }
+        eval_stmt(stmt, env.clone());
+    }
+}
+
+fn eval_stmt(stmt: Stmt, env: Rc<RefCell<Env>>) {
+    match stmt {
+        Stmt::ExpStmt { exp } => {
+            let _ = eval_exp(exp, env);
+        }
+        Stmt::DefStmt { id, exp } => {
+            let id_str = id.to_string();
+            let val = eval_exp(exp, env.clone()).unwrap();
+            env.borrow_mut().set_var(id_str, val);
+        }
+        Stmt::PrintStmt { exp, print_type } => {
+            let val = eval_exp(exp, env).unwrap();
+            match print_type {
+                PrintType::PrintNum => println!("{}", val.to_num()),
+                PrintType::PrintBool => println!("{}", if val.to_bool() { "#t" } else { "#f" }),
             }
         }
     }
 }
 
-fn eval_exp(exp: Exp, env: &mut Env) -> Result<Value, String> {
+fn eval_exp(exp: Exp, env: Rc<RefCell<Env>>) -> Result<Value, String> {
     match exp {
-        Exp::Bool { val } => Ok(Value::Bool(val)),
-        Exp::Num  { val } => Ok(Value::Num(val)),
-        Exp::Id   { val } => match env.get_var(&val) {
-            Some(Value::FunExp(exp)) => eval_exp(*exp, env),
-            Some(Value::Num(val))    => Ok(Value::Num(val)),
-            Some(Value::Bool(val))   => Ok(Value::Bool(val)),
+        Exp::Bool(val) => Ok(Value::Bool(val)),
+        Exp::Num(val) => Ok(Value::Num(val)),
+        Exp::Id(val) => match env.borrow().get_var(&val) {
+            Some(val) => Ok(val),
             None => panic!("Variable {} not found", val),
         },
         Exp::NumExp { op, args } => {
             let args = args.iter()
-                .map(|arg| eval_exp(*arg.clone(), env).unwrap().to_num())
+                .map(|arg| eval_exp(*arg.clone(), env.clone()).unwrap().to_num())
                 .collect::<Vec<i64>>();
             match op {
                 NumOp::Plus     => Ok(Value::Num(args.iter().sum())),
@@ -134,7 +56,7 @@ fn eval_exp(exp: Exp, env: &mut Env) -> Result<Value, String> {
         }
         Exp::LogicalExp { op, args } => {
             let args = args.iter()
-                .map(|arg| eval_exp(*arg.clone(), env).unwrap().to_bool())
+                .map(|arg| eval_exp(*arg.clone(), env.clone()).unwrap().to_bool())
                 .collect::<Vec<bool>>();
             match op {
                 LogicalOp::And => Ok(Value::Bool(args.iter().all(|&x| x))),
@@ -143,26 +65,35 @@ fn eval_exp(exp: Exp, env: &mut Env) -> Result<Value, String> {
             }
         },
         Exp::IfExp { cond_exp, then_exp, else_exp } => {
-            if eval_exp(*cond_exp, env).unwrap().to_bool() {
+            if eval_exp(*cond_exp, env.clone()).unwrap().to_bool() {
                 eval_exp(*then_exp, env)
             } else {
                 eval_exp(*else_exp, env)
             }
         },
-        Exp::FunExp { params, body } => {
-            Ok(Value::FunExp(Box::new(Exp::FunExp { params, body })))
+        Exp::FunExp { params, def_stmts, body } => {
+            let new_env = Env::extend(env.clone());
+            for stmt in def_stmts {
+                eval_stmt(stmt, new_env.clone());
+            }
+            Ok(Value::Closure(Closure::new(
+                params.iter().map(|param| param.to_string()).collect(), 
+                body, 
+                new_env
+            )))
         },
         Exp::FunCall { func, args } => {
-            let fun_exp = eval_exp(*func, env).unwrap().to_fun();
-            if let Exp::FunExp { params, body } = *fun_exp {
-                let mut new_env = env.extend();
-                for (param, arg) in params.iter().zip(args.iter()) {
-                    let val = eval_exp(*arg.clone(), env).unwrap();
-                    new_env.set_var(param.to_string(), val);
-                }
-                eval_exp(*body, &mut new_env)
-            } else {
-                panic!("Expected function expression");
+            let fun_exp = eval_exp(*func, env.clone()).unwrap();
+            match fun_exp {
+                Value::Closure(closure) => {
+                    let new_env = Env::extend(closure.env.clone());
+                    for (param, arg) in closure.params.iter().zip(args) {
+                        let arg_val = eval_exp(*arg, env.clone()).unwrap();
+                        new_env.borrow_mut().set_var(param.to_string(), arg_val);
+                    }
+                    eval_exp(*closure.body.clone(), new_env)
+                },
+                _ => panic!("Expected a function"),
             }
         }
     }

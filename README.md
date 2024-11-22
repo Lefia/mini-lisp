@@ -7,8 +7,8 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
 
 ## Roadmap
 - [x] Basic Features
-- [ ] Add tests
 - [ ] Bonus Features
+- [ ] Add tests
 - [ ] Documentation
 
 ## Features
@@ -22,10 +22,10 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
     - [x] Function
     - [x] Named Function
 - [ ] Bonus Features
-    - [ ] Recursion
+    - [x] Recursion
     - [ ] Type Checking
-    - [ ] Nested Function
-    - [ ] First-class Function
+    - [x] Nested Function
+    - [x] First-class Function
 
 ## Installation
 

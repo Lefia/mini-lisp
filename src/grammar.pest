@@ -36,7 +36,7 @@ DEF_STMT = { "(" ~ "define" ~ VARIABLE ~ EXP ~ ")" }
 
 FUN_EXP = { "(" ~ "fun" ~ FUN_IDS ~ FUN_BODY ~ ")" }
     FUN_IDS  = { "(" ~ id* ~ ")" }
-    FUN_BODY = _{ EXP }
+    FUN_BODY = { DEF_STMT* ~ EXP }
     FUN_CALL = { 
         "(" ~ FUN_EXP ~ PARAM* ~ ")"
         | "(" ~ FUN_NAME ~ PARAM* ~ ")" 

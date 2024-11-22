@@ -92,19 +92,19 @@ fn parse_bool(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
         "#f" => false,
         _ => unreachable!()
     };
-    Ok(Exp::Bool{val})
+    Ok(Exp::Bool(val))
 }
 
 fn parse_num(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     assert!(pair.as_rule() == Rule::number);
     
     let val: i64 = pair.as_str().parse().unwrap();
-    Ok(Exp::Num{val})
+    Ok(Exp::Num(val))
 }
 
 fn parse_id(string: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     let val = string.as_str().to_string();
-    Ok(Exp::Id{val})
+    Ok(Exp::Id(val))
 }
 
 fn parse_num_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
@@ -148,12 +148,33 @@ fn parse_fun_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     assert!(pair.as_rule() == Rule::FUN_EXP);
     
     let mut fun_exp = pair.into_inner();
-    let params = fun_exp.next().unwrap().into_inner().map(|id| {
+
+    let ids = fun_exp.next().unwrap();
+    let params = ids.into_inner().map(|id| {
         parse_id(id).unwrap()
     }).collect();
-    let body = Box::new(parse_exp(fun_exp.next().unwrap())?);
-    
-    Ok(Exp::FunExp{params, body})
+
+    let mut stmts = Vec::new();
+    let mut exp = None;
+
+    let func_body = fun_exp.next().unwrap();
+
+    for pair in func_body.into_inner() {
+        match pair.as_rule() {
+            Rule::DEF_STMT => {
+                stmts.push(parse_def_stmt(pair)?);
+            },
+            Rule::EXP => {
+                exp = Some(parse_exp(pair)?);
+                break;
+            },
+            _ => unreachable!()
+        }
+    }
+
+    let body = exp.unwrap();
+
+    Ok(Exp::FunExp { params, def_stmts: stmts, body: Box::new(body) })
 }
 
 fn parse_fun_call(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
