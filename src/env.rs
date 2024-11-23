@@ -1,6 +1,6 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
 
 use crate::ast::*;
 
@@ -51,23 +51,27 @@ impl Value {
     pub fn to_bool(&self) -> Result<bool, String> {
         match self {
             Value::Bool(val) => Ok(*val),
-            _ => Err(String::from("Type Error: Expect 'boolean' but got 'number'")),
+            _ => Err(String::from(
+                "Type Error: Expect 'boolean' but got 'number'",
+            )),
         }
     }
 
     pub fn to_num(&self) -> Result<i64, String> {
         match self {
             Value::Num(val) => Ok(*val),
-            _ => Err(String::from("Type Error: Expect 'number' but got 'boolean'")),
+            _ => Err(String::from(
+                "Type Error: Expect 'number' but got 'boolean'",
+            )),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Closure { 
-    pub params: Vec<String>, 
-    pub body: Box<Exp>, 
-    pub env: Rc<RefCell<Env>>
+pub struct Closure {
+    pub params: Vec<String>,
+    pub body: Box<Exp>,
+    pub env: Rc<RefCell<Env>>,
 }
 
 impl Closure {

@@ -8,7 +8,7 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
 ## Roadmap
 - [x] Basic Features
 - [x] Bonus Features
-- [ ] Add tests
+- [x] Add tests
 - [ ] Documentation
 
 ## Features
