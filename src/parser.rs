@@ -7,13 +7,13 @@ use crate::ast::*;
 #[grammar = "grammar.pest"]
 struct Parser;
 
-pub fn parse(input: &str) -> Result<Program, pest::error::Error<Rule>> {
-    let mut pairs = Parser::parse(Rule::PROGRAM, input)?;
+pub fn parse(input: &str) -> Result<Program, String> {
+    let mut pairs = Parser::parse(Rule::PROGRAM, input).map_err(|_| "Syntax Error".to_string())?;
     let program = parse_program(pairs.next().unwrap())?;
     Ok(program)
 }
 
-fn parse_program(pair: Pair<Rule>) -> Result<Program, pest::error::Error<Rule>> {
+fn parse_program(pair: Pair<Rule>) -> Result<Program, String> {
     assert!(pair.as_rule() == Rule::PROGRAM);
 
     let stmts = pair.into_inner().map(|stmt| {
@@ -23,10 +23,10 @@ fn parse_program(pair: Pair<Rule>) -> Result<Program, pest::error::Error<Rule>> 
     Ok(Program{stmts})
 }
 
-fn parse_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>> {
+fn parse_stmt(pair: Pair<Rule>) -> Result<Stmt, String> {
     assert!(pair.as_rule() == Rule::STMT);
 
-    let stmt = pair.into_inner().next().unwrap();
+    let stmt = pair.into_inner().next().ok_or("Empty statement".to_string())?;
     match stmt.as_rule() {
         Rule::EXP => parse_exp_stmt(stmt),
         Rule::DEF_STMT => parse_def_stmt(stmt),
@@ -35,7 +35,7 @@ fn parse_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>> {
     }
 }
 
-fn parse_exp_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>> {
+fn parse_exp_stmt(pair: Pair<Rule>) -> Result<Stmt, String> {
     assert!(pair.as_rule() == Rule::EXP);
 
     let exp = parse_exp(pair)?;
@@ -43,7 +43,7 @@ fn parse_exp_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>> {
     Ok(Stmt::ExpStmt{exp})
 }
 
-fn parse_def_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>>{
+fn parse_def_stmt(pair: Pair<Rule>) -> Result<Stmt, String>{
     assert!(pair.as_rule() == Rule::DEF_STMT);
     
     let mut inner = pair.into_inner();
@@ -53,7 +53,7 @@ fn parse_def_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>>{
     
 }
 
-fn parse_print_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>>{
+fn parse_print_stmt(pair: Pair<Rule>) -> Result<Stmt, String>{
     assert!(pair.as_rule() == Rule::PRINT_STMT);
 
     let print_type = if pair.as_str().contains("print-bool") {
@@ -67,7 +67,7 @@ fn parse_print_stmt(pair: Pair<Rule>) -> Result<Stmt, pest::error::Error<Rule>>{
     Ok(Stmt::PrintStmt{exp, print_type})
 }
 
-fn parse_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_exp(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::EXP);
 
     let exp = pair.into_inner().next().unwrap();
@@ -84,7 +84,7 @@ fn parse_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     }
 }
 
-fn parse_bool(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_bool(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::bool);
     
     let val = match pair.as_str() {
@@ -95,19 +95,19 @@ fn parse_bool(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     Ok(Exp::Bool(val))
 }
 
-fn parse_num(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_num(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::number);
     
     let val: i64 = pair.as_str().parse().unwrap();
     Ok(Exp::Num(val))
 }
 
-fn parse_id(string: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_id(string: Pair<Rule>) -> Result<Exp, String> {
     let val = string.as_str().to_string();
     Ok(Exp::Id(val))
 }
 
-fn parse_num_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_num_exp(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::NUM_OP);
     
     let num_exp = pair.into_inner().next().unwrap();
@@ -128,7 +128,7 @@ fn parse_num_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     Ok(Exp::NumExp{op, args})
 }
 
-fn parse_logical_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_logical_exp(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::LOGICAL_OP);
     
     let logical_exp = pair.into_inner().next().unwrap();
@@ -144,7 +144,7 @@ fn parse_logical_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> 
     Ok(Exp::LogicalExp{op, args})
 }
 
-fn parse_fun_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_fun_exp(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::FUN_EXP);
     
     let mut fun_exp = pair.into_inner();
@@ -177,7 +177,7 @@ fn parse_fun_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     Ok(Exp::FunExp { params, def_stmts: stmts, body: Box::new(body) })
 }
 
-fn parse_fun_call(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_fun_call(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::FUN_CALL);
     
     let mut fun_call = pair.into_inner();
@@ -196,7 +196,7 @@ fn parse_fun_call(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
     Ok(Exp::FunCall{func, args})
 }
 
-fn parse_if_exp(pair: Pair<Rule>) -> Result<Exp, pest::error::Error<Rule>> {
+fn parse_if_exp(pair: Pair<Rule>) -> Result<Exp, String> {
     assert!(pair.as_rule() == Rule::IF_EXP);
 
     let mut if_exp = pair.into_inner();

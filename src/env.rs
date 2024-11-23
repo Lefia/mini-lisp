@@ -48,19 +48,17 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn to_bool(&self) -> bool {
+    pub fn to_bool(&self) -> Result<bool, String> {
         match self {
-            Value::Num(val) => *val != 0,
-            Value::Bool(val) => *val,
-            _ => false,
+            Value::Bool(val) => Ok(*val),
+            _ => Err(String::from("Type Error: Expect 'boolean' but got 'number'")),
         }
     }
 
-    pub fn to_num(&self) -> i64 {
+    pub fn to_num(&self) -> Result<i64, String> {
         match self {
-            Value::Num(val) => *val,
-            Value::Bool(val) => *val as i64,
-            _ => 0,
+            Value::Num(val) => Ok(*val),
+            _ => Err(String::from("Type Error: Expect 'number' but got 'boolean'")),
         }
     }
 }

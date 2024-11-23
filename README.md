@@ -7,7 +7,7 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
 
 ## Roadmap
 - [x] Basic Features
-- [ ] Bonus Features
+- [x] Bonus Features
 - [ ] Add tests
 - [ ] Documentation
 
@@ -21,9 +21,9 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
     - [x] Variable Definition operations
     - [x] Function
     - [x] Named Function
-- [ ] Bonus Features
+- [x] Bonus Features
     - [x] Recursion
-    - [ ] Type Checking
+    - [x] Type Checking
     - [x] Nested Function
     - [x] First-class Function
 
