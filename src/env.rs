@@ -48,20 +48,22 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn to_bool(&self) -> Result<bool, String> {
+    pub fn to_bool(&self) -> Result<bool, (String, String)> {
         match self {
             Value::Bool(val) => Ok(*val),
-            _ => Err(String::from(
-                "Type Error: Expect 'boolean' but got 'number'",
+            _ => Err((
+                "type error".to_string(),
+                "expect 'boolean' but got 'number'".to_string(),
             )),
         }
     }
 
-    pub fn to_num(&self) -> Result<i64, String> {
+    pub fn to_num(&self) -> Result<i64, (String, String)> {
         match self {
             Value::Num(val) => Ok(*val),
-            _ => Err(String::from(
-                "Type Error: Expect 'number' but got 'boolean'",
+            _ => Err((
+                "type error".to_string(),
+                "expect 'number' but got 'boolean'".to_string(),
             )),
         }
     }

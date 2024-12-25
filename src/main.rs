@@ -4,23 +4,23 @@ use colored::Colorize;
 
 fn main() {
     let path = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("{}\nUsage: mini-lisp <file>", "Please provide a file path!".red().bold());
+        eprintln!("{}: Please provide a file path!\n{}", "error".red().bold(), "Usage: mini-lisp <file>".underline());
         std::process::exit(1);
     });
 
     let unparsed = std::fs::read_to_string(path).unwrap_or_else(|_| {
-        eprintln!("{}", "Failed to read the file!".red().bold());
+        eprintln!("{}: Failed to read the file!", "error".red().bold());
         std::process::exit(1);
     });
 
     let writer = std::io::stdout();
     let program =  parser::parse(&unparsed).unwrap_or_else(|err| {
-        eprintln!("{}", err.red().bold());
+        eprintln!("{}:\n{}", "syntax error".red().bold(), err);
         std::process::exit(1);
     });
     
     if let Err(err) = interpreter::run(program, &mut writer.lock()) {
-        eprintln!("{}", err.red().bold());
+        eprintln!("{}: {}", err.0.red().bold(), err.1);
     }
 }
 
@@ -259,7 +259,7 @@ mod tests {
         let result = interpreter::run(program, &mut io::stdout());
         assert!(result.is_err());
         if let Err(err) = result {
-            assert_eq!(err, "Type Error: Expect 'number' but got 'boolean'");
+            assert_eq!(err, ("type error".to_string(), "expect 'number' but got 'boolean'".to_string()));
         }
 
         let unparsed = r"(define f
@@ -270,7 +270,7 @@ mod tests {
         let result = interpreter::run(program, &mut io::stdout());
         assert!(result.is_err());
         if let Err(err) = result {
-            assert_eq!(err, "Type Error: Expect 'number' but got 'boolean'");
+            assert_eq!(err, ("type error".to_string(), "expect 'number' but got 'boolean'".to_string()));
         }
     }
 

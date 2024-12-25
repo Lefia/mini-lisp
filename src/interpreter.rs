@@ -6,7 +6,7 @@ use std::result::Result;
 use crate::ast::*;
 use crate::env::*;
 
-pub fn run<W: Write>(program: Program, writer: &mut W) -> Result<(), String> {
+pub fn run<W: Write>(program: Program, writer: &mut W) -> Result<(), (String, String)> {
     let env = Rc::new(RefCell::new(Env::new()));
     for stmt in program.stmts {
         eval_stmt(stmt, env.clone(), writer)?;
@@ -14,7 +14,7 @@ pub fn run<W: Write>(program: Program, writer: &mut W) -> Result<(), String> {
     Ok(())
 }
 
-fn eval_stmt<W: Write>(stmt: Stmt, env: Rc<RefCell<Env>>, writer: &mut W) -> Result<(), String> {
+fn eval_stmt<W: Write>(stmt: Stmt, env: Rc<RefCell<Env>>, writer: &mut W) -> Result<(), (String, String)> {
     match stmt {
         Stmt::ExpStmt { exp } => {
             eval_exp(exp, env.clone(), writer)?;
@@ -28,12 +28,10 @@ fn eval_stmt<W: Write>(stmt: Stmt, env: Rc<RefCell<Env>>, writer: &mut W) -> Res
             let val = eval_exp(exp, env.clone(), writer)?;
             match print_type {
                 PrintType::PrintNum => {
-                    writeln!(writer, "{}", val.to_num()?)
-                        .map_err(|e| e.to_string())?
+                    writeln!(writer, "{}", val.to_num()?).unwrap();
                 }
                 PrintType::PrintBool => {
-                    writeln!(writer, "{}", if val.to_bool()? { "#t" } else { "#f" })
-                        .map_err(|e| e.to_string())?
+                    writeln!(writer, "{}", if val.to_bool()? { "#t" } else { "#f" }).unwrap();
                 }
             };
         }
@@ -41,19 +39,19 @@ fn eval_stmt<W: Write>(stmt: Stmt, env: Rc<RefCell<Env>>, writer: &mut W) -> Res
     Ok(())
 }
 
-fn eval_exp<W: Write>(exp: Exp, env: Rc<RefCell<Env>>, writer: &mut W) -> Result<Value, String> {
+fn eval_exp<W: Write>(exp: Exp, env: Rc<RefCell<Env>>, writer: &mut W) -> Result<Value, (String, String)> {
     match exp {
         Exp::Bool(val) => Ok(Value::Bool(val)),
         Exp::Num(val) => Ok(Value::Num(val)),
         Exp::Id(val) => match env.borrow().get_var(&val) {
             Some(val) => Ok(val),
-            None => Err(format!("Variable {} not found", val)),
+            None => Err(("syntax error".to_string(), format!("variable '{}' not found", val))),
         },
         Exp::NumExp { op, args } => {
             let args = args
                 .iter()
                 .map(|arg| eval_exp(*arg.clone(), env.clone(), writer)?.to_num())
-                .collect::<Result<Vec<i64>, String>>()?;
+                .collect::<Result<Vec<i64>, (String, String)>>()?;
             match op {
                 NumOp::Plus => Ok(Value::Num(args.iter().sum())),
                 NumOp::Minus => Ok(Value::Num(args[0] - args[1])),
@@ -69,7 +67,7 @@ fn eval_exp<W: Write>(exp: Exp, env: Rc<RefCell<Env>>, writer: &mut W) -> Result
             let args = args
                 .iter()
                 .map(|arg| eval_exp(*arg.clone(), env.clone(), writer)?.to_bool())
-                .collect::<Result<Vec<bool>, String>>()?;
+                .collect::<Result<Vec<bool>, (String, String)>>()?;
             match op {
                 LogicalOp::And => Ok(Value::Bool(args.iter().all(|&x| x))),
                 LogicalOp::Or => Ok(Value::Bool(args.iter().any(|&x| x))),
@@ -113,7 +111,7 @@ fn eval_exp<W: Write>(exp: Exp, env: Rc<RefCell<Env>>, writer: &mut W) -> Result
                     }
                     eval_exp(*closure.body.clone(), new_env, writer)
                 }
-                _ => Err("Not a function".to_string()),
+                _ => unreachable!()
             }
         }
     }

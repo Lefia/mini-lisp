@@ -8,7 +8,7 @@ use crate::ast::*;
 struct Parser;
 
 pub fn parse(input: &str) -> Result<Program, String> {
-    let mut pairs = Parser::parse(Rule::PROGRAM, input).map_err(|_| "Syntax Error".to_string())?;
+    let mut pairs = Parser::parse(Rule::PROGRAM, input).map_err(|e| format!("{}", e))?;
     let program = parse_program(pairs.next().unwrap())?;
     Ok(program)
 }
