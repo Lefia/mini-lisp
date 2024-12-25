@@ -26,6 +26,21 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
     - [x] Nested Function
     - [x] First-class Function
 
+## Project Structure
+
+```
+mini-lisp/
+├── Cargo.toml          # Project configuration file for Rust
+└── src/
+    ├── main.rs         # Entry point of the interpreter
+    ├── grammar.pest    # Grammar definition
+    ├── parser.rs       # Parser implementation
+    ├── interpreter.rs  # Interpreter implementation
+    ├── ast.rs          # Abstract Syntax Tree definitions
+    ├── env.rs          # Environment definitions
+    └── lib.rs          # Library module
+```
+
 ## Installation
 
 ```bash
