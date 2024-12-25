@@ -9,7 +9,6 @@ This is a personal project for the course "Compiler (CE3006*)" at National Centr
 - [x] Basic Features
 - [x] Bonus Features
 - [x] Add tests
-- [ ] Documentation
 
 ## Features
 - [x] Basic Features

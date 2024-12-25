@@ -17,7 +17,7 @@ pub fn run<W: Write>(program: Program, writer: &mut W) -> Result<(), String> {
 fn eval_stmt<W: Write>(stmt: Stmt, env: Rc<RefCell<Env>>, writer: &mut W) -> Result<(), String> {
     match stmt {
         Stmt::ExpStmt { exp } => {
-            eval_exp(exp, env, writer)?;
+            eval_exp(exp, env.clone(), writer)?;
         }
         Stmt::DefStmt { id, exp } => {
             let id_str = id.to_string();
@@ -25,10 +25,11 @@ fn eval_stmt<W: Write>(stmt: Stmt, env: Rc<RefCell<Env>>, writer: &mut W) -> Res
             env.borrow_mut().set_var(id_str, val);
         }
         Stmt::PrintStmt { exp, print_type } => {
-            let val = eval_exp(exp, env, writer)?;
+            let val = eval_exp(exp, env.clone(), writer)?;
             match print_type {
                 PrintType::PrintNum => {
-                    writeln!(writer, "{}", val.to_num()?).map_err(|e| e.to_string())?
+                    writeln!(writer, "{}", val.to_num()?)
+                        .map_err(|e| e.to_string())?
                 }
                 PrintType::PrintBool => {
                     writeln!(writer, "{}", if val.to_bool()? { "#t" } else { "#f" })

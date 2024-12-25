@@ -1,17 +1,26 @@
 use mini_lisp::interpreter;
 use mini_lisp::parser;
+use colored::Colorize;
 
 fn main() {
-    let path = std::env::args().nth(1).expect("No file path provided");
-    let unparsed = std::fs::read_to_string(path).expect("Could not read file");
+    let path = std::env::args().nth(1).unwrap_or_else(|| {
+        eprintln!("{}\nUsage: mini-lisp <file>", "Please provide a file path!".red().bold());
+        std::process::exit(1);
+    });
+
+    let unparsed = std::fs::read_to_string(path).unwrap_or_else(|_| {
+        eprintln!("{}", "Failed to read the file!".red().bold());
+        std::process::exit(1);
+    });
+
     let writer = std::io::stdout();
-    match parser::parse(&unparsed) {
-        Ok(program) => {
-            if let Err(err) = interpreter::run(program, &mut writer.lock()) {
-                eprintln!("{}", err);
-            }
-        }
-        Err(err) => eprintln!("{}", err),
+    let program =  parser::parse(&unparsed).unwrap_or_else(|err| {
+        eprintln!("{}", err.red().bold());
+        std::process::exit(1);
+    });
+    
+    if let Err(err) = interpreter::run(program, &mut writer.lock()) {
+        eprintln!("{}", err.red().bold());
     }
 }
 
